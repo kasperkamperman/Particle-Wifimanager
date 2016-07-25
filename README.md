@@ -10,4 +10,4 @@ It automatically will try to reconnect of the network has been found again.
 
 Suggestions are welcome.
 
-ksper Kamperman - 25-07-2016
+Kasper Kamperman - 25-07-2016
