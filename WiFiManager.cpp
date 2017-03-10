@@ -12,9 +12,6 @@ void WiFiManager::setup() {
 		Serial.println("The WiFiManager says hi !!");
 	#endif
 
-	// we need to call WiFi.listen() once... otherwise
-	// we get an SOS blink when trying WiFi.scan
-	//WiFi.listen();
 	isFirstScan = true;
 	lastWiFiStateUpdateTime = 0;
 
@@ -41,8 +38,6 @@ bool WiFiManager::connected() {
 	else 												return false;
 }
 
-
-
 void WiFiManager::resetWiFiRetryConnectTimer() {
 
 	// when we are active on the softap we don't want to move out of the WiFi Direct state
@@ -63,9 +58,6 @@ void WiFiManager::updateWiFiStates() {
 	// later (when softap is fully supported) more states can be introduced
 	// for example if a client is actually actively doing something.
 
-	Serial.print("Track WiFi.listening() status : ");
-	Serial.println(WiFi.listening());
-
 	switch(state) {
 
 		case WIFI_DIRECT:
@@ -79,13 +71,13 @@ void WiFiManager::updateWiFiStates() {
 					WiFi.listen();
 
 					#ifdef WDEBUG
-						Serial.print("WiFi.listening() status after WiFi.listen() call: ");
-						Serial.println(WiFi.listening());
+						//Serial.print("WiFi.listening() status after WiFi.listen() call: ");
+						//Serial.println(WiFi.listening());
 					#endif
 				}
 
 				#ifdef WDEBUG
-					Serial.print("time in WiFi direct state: ");
+					Serial.print("time in WiFi direct (listen) state: ");
 					Serial.println(millis() - currentStateStartTime);
 				#endif
 
@@ -160,19 +152,19 @@ void WiFiManager::updateWiFiStates() {
 							Serial.println("SSID Found with signal strength higher then -75 dBm");
 						#endif
 
-						// exit listen mode if it was active
-						if(WiFi.listening()) {
-							WiFi.listen(false);
+						// we reset it here, this seems the most logical
+						failedConnectionAttemptFlag = false;
 
-							// we reset it here, this seems the most logical
-							failedConnectionAttemptFlag = false;
-							weakRSSIFlag = false;
-						}
+						weakRSSIFlag 								= false;
 
 						state = WIFI_ATTEMPT_CONNECTING;
 
 					}
 					else {
+
+						#ifdef WDEBUG
+							Serial.println("weak RSSI");
+						#endif
 
 						// Weak RSSI
 						weakRSSIFlag = true;
@@ -213,13 +205,22 @@ void WiFiManager::updateWiFiStates() {
 				}
 				else {
 
+					//WiFi.listen(false);
+					//Serial.print("connecting() :");
+					//Serial.println(WiFi.connecting());
+
 					//WiFi.connecting will return false once the device has successfully
 					//connected to the Wi-Fi network.
 					if( !WiFi.connecting() ) {
 
+						// WiFi connect won't work if we are listening
+						WiFi.listen(false);
 						// we manage listen ourself
 						WiFi.connect(WIFI_CONNECT_SKIP_LISTEN);
-						//WiFi.connect();
+
+						//Serial.print("connecting after call to connect :");
+						//Serial.println(WiFi.connecting());
+
 
 						#ifdef WDEBUG
 							Serial.println("Attempting to connect.");
@@ -321,9 +322,19 @@ bool WiFiManager::isStoredSSIDAvailable() {
 	// safety measures againt firmware crash.
 	// this only works when in a certain
 	if(isFirstScan) {
+		//Serial.print("isFirstScan before WiFi.listening() status : ");
+		//Serial.println(WiFi.listening());
+
 		WiFi.on();
-		WiFi.listen();
-		waitUntil(WiFi.listening);
+		// necessary
+		// https://github.com/spark/firmware/issues/1062#issuecomment-246777494
+		// delay in loop doesn't matter since led functionality is controlled
+		// in a separate thread
+		delay(500);
+
+		//Serial.print("isFirstScan after WiFi.listening() status : ");
+		//Serial.println(WiFi.listening());
+
 		isFirstScan = false;
 	}
 

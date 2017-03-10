@@ -1,8 +1,3 @@
-/*
-WiFi.listening() seems to give always false when creditials are stored...
-The network is not within reach (really weak), so no connection will be made. 
-*/
-
 #include "application.h"
 #include "WifiManager.h"
 //#include "softap_http.h"
